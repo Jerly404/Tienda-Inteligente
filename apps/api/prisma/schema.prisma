@@ -1,0 +1,421 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  OWNER
+  SUPPLIER
+}
+
+enum BusinessType {
+  STORE
+  SUPPLIER
+}
+
+enum BusinessStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  SUSPENDED
+}
+
+enum OfferAvailability {
+  AVAILABLE
+  LIMITED
+  ON_REQUEST
+  OUT_OF_STOCK
+}
+
+enum QuotationStatus {
+  SENT
+  RESPONDED
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  CANCELLED
+}
+
+enum QuoteResponseStatus {
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+model User {
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  passwordHash        String
+  name                String
+  role                UserRole             @default(OWNER)
+  active              Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  tokenVersion        Int                  @default(0)
+  updatedAt           DateTime             @default(now()) @updatedAt
+  favorites           Favorite[]
+  preference          UserPreference?
+  notifications       Notification[]
+  savedComparisons    SavedComparison[]
+  purchases           Purchase[]
+  productRequests     ProductRequest[]
+  resetTokens         PasswordResetToken[]
+  deletionRequestedAt DateTime?
+  memberships         BusinessMembership[]
+  auditLogs           AuditLog[]
+  shoppingLists       ShoppingList[]
+  quotationRequests   QuotationRequest[]
+}
+
+model Business {
+  id                 String               @id @default(cuid())
+  name               String
+  description        String?
+  imageUrl           String?
+  hours              String?
+  deliveryZones      String?
+  deliveryZoneGeoJson Json?
+  paymentMethods     String?
+  minimumOrder       Decimal?             @db.Decimal(12, 2)
+  favorites          Favorite[]
+  purchases          Purchase[]
+  legalName          String?
+  taxId              String?              @unique
+  type               BusinessType
+  status             BusinessStatus       @default(PENDING)
+  phone              String?
+  createdAt          DateTime             @default(now())
+  memberships        BusinessMembership[]
+  branches           Branch[]
+  offers             SupplierOffer[]
+  quotationRequests  QuotationRequest[]
+  quotationResponses QuotationResponse[]
+}
+
+model BusinessMembership {
+  userId     String
+  businessId String
+  permission String   @default("OWNER")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@id([userId, businessId])
+}
+
+model Branch {
+  id                  String          @id @default(cuid())
+  businessId          String
+  name                String
+  address             String?
+  department          String?
+  province            String?
+  district            String?
+  latitude            Decimal?        @db.Decimal(9, 6)
+  longitude           Decimal?        @db.Decimal(9, 6)
+  deliveryFee         Decimal?        @db.Decimal(12, 2)
+  deliveryAvailable   Boolean         @default(false)
+  minimumFreeDelivery Decimal?        @db.Decimal(12, 2)
+  business            Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  offers              SupplierOffer[]
+}
+
+model Category {
+  description String?
+  active      Boolean   @default(true)
+  id          String    @id @default(cuid())
+  name        String    @unique
+  products    Product[]
+}
+
+model Brand {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  products Product[]
+}
+
+model Product {
+  description String?
+  imageUrl    String?
+  active      Boolean          @default(true)
+  id          String           @id @default(cuid())
+  name        String
+  categoryId  String?
+  brandId     String?
+  category    Category?        @relation(fields: [categoryId], references: [id])
+  brand       Brand?           @relation(fields: [brandId], references: [id])
+  variants    ProductVariant[]
+
+  @@index([name])
+}
+
+model ProductVariant {
+  id              String                 @id @default(cuid())
+  productId       String
+  label           String
+  baseQuantity    Decimal                @db.Decimal(12, 3)
+  baseUnit        String
+  unitsPerPackage Int                    @default(1)
+  product         Product                @relation(fields: [productId], references: [id], onDelete: Cascade)
+  offers          SupplierOffer[]
+  favorites       Favorite[]
+  purchaseItems   PurchaseItem[]
+  listItems       ShoppingListItem[]
+  quotationItems  QuotationRequestItem[]
+
+  @@unique([productId, label])
+}
+
+model SupplierOffer {
+  active          Boolean           @default(true)
+  promotions      Promotion[]
+  id              String            @id @default(cuid())
+  businessId      String
+  branchId        String
+  variantId       String
+  price           Decimal           @db.Decimal(12, 2)
+  currency        String            @default("PEN")
+  minimumPackages Int               @default(1)
+  stockPackages   Int?
+  stockMinimumPackages Int          @default(0)
+  availability    OfferAvailability @default(AVAILABLE)
+  updatedAt       DateTime          @updatedAt
+  expiresAt       DateTime?
+  business        Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  branch          Branch            @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  variant         ProductVariant    @relation(fields: [variantId], references: [id])
+  priceHistory    PriceHistory[]
+
+  @@index([variantId, availability, expiresAt])
+}
+
+model PriceHistory {
+  id         String        @id @default(cuid())
+  offerId    String
+  price      Decimal       @db.Decimal(12, 2)
+  recordedAt DateTime      @default(now())
+  offer      SupplierOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+}
+
+model ShoppingList {
+  id        String             @id @default(cuid())
+  ownerId   String
+  name      String
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  owner     User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  items     ShoppingListItem[]
+}
+
+model ShoppingListItem {
+  id        String         @id @default(cuid())
+  listId    String
+  variantId String
+  quantity  Decimal        @db.Decimal(12, 3)
+  unit      String
+  list      ShoppingList   @relation(fields: [listId], references: [id], onDelete: Cascade)
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+
+  @@unique([listId, variantId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String
+  action     String
+  entityType String
+  entityId   String
+  details    Json?
+  createdAt  DateTime @default(now())
+  actor      User     @relation(fields: [actorId], references: [id])
+
+  @@index([entityType, entityId, createdAt])
+}
+
+model QuotationRequest {
+  id                 String                 @id @default(cuid())
+  buyerId            String
+  supplierBusinessId String
+  status             QuotationStatus        @default(SENT)
+  message            String?
+  rejectionReason    String?
+  expiresAt          DateTime
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  buyer              User                   @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  supplier           Business               @relation(fields: [supplierBusinessId], references: [id], onDelete: Restrict)
+  items              QuotationRequestItem[]
+  responses          QuotationResponse[]
+  acceptedResponse   QuotationResponse?     @relation("AcceptedQuotation", fields: [acceptedResponseId], references: [id], onDelete: SetNull)
+  acceptedResponseId String?                @unique
+
+  @@index([buyerId, status, createdAt])
+  @@index([supplierBusinessId, status, createdAt])
+}
+
+model QuotationRequestItem {
+  id            String                  @id @default(cuid())
+  requestId     String
+  variantId     String
+  quantity      Decimal                 @db.Decimal(12, 3)
+  unit          String
+  request       QuotationRequest        @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  variant       ProductVariant          @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  responseItems QuotationResponseItem[]
+
+  @@unique([requestId, variantId])
+}
+
+model QuotationResponse {
+  id                 String                  @id @default(cuid())
+  requestId          String
+  supplierBusinessId String
+  status             QuoteResponseStatus     @default(SENT)
+  deliveryFee        Decimal?                @db.Decimal(12, 2)
+  note               String?
+  expiresAt          DateTime
+  createdAt          DateTime                @default(now())
+  request            QuotationRequest        @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  supplier           Business                @relation(fields: [supplierBusinessId], references: [id], onDelete: Restrict)
+  items              QuotationResponseItem[]
+  acceptedBy         QuotationRequest?       @relation("AcceptedQuotation")
+
+  @@unique([requestId, supplierBusinessId])
+}
+
+model QuotationResponseItem {
+  id                String               @id @default(cuid())
+  responseId        String
+  requestItemId     String
+  packagePrice      Decimal              @db.Decimal(12, 2)
+  availablePackages Int?
+  offeredPackages   Int
+  item              QuotationRequestItem @relation(fields: [requestItemId], references: [id], onDelete: Restrict)
+  response          QuotationResponse    @relation(fields: [responseId], references: [id], onDelete: Cascade)
+
+  @@unique([responseId, requestItemId])
+}
+
+model Favorite {
+  id          String          @id @default(cuid())
+  userId      String
+  variantId   String?
+  businessId  String?
+  targetPrice Decimal?        @db.Decimal(12, 2)
+  createdAt   DateTime        @default(now())
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  variant     ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  business    Business?       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, variantId])
+  @@unique([userId, businessId])
+}
+
+model UserPreference {
+  userId    String   @id
+  data      Json     @default("{}")
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String
+  message   String
+  link      String
+  eventKey  String?   @unique
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+}
+
+model SavedComparison {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  input     Json
+  result    Json
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model Purchase {
+  id             String         @id @default(cuid())
+  userId         String
+  businessId     String
+  purchasedAt    DateTime
+  subtotal       Decimal        @db.Decimal(12, 2)
+  deliveryCost   Decimal        @db.Decimal(12, 2)
+  total          Decimal        @db.Decimal(12, 2)
+  referenceTotal Decimal?       @db.Decimal(12, 2)
+  createdAt      DateTime       @default(now())
+  user           User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  business       Business       @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  items          PurchaseItem[]
+
+  @@index([userId, purchasedAt])
+}
+
+model PurchaseItem {
+  id           String         @id @default(cuid())
+  purchaseId   String
+  variantId    String
+  quantity     Decimal        @db.Decimal(12, 3)
+  unit         String
+  packages     Int
+  packagePrice Decimal        @db.Decimal(12, 2)
+  total        Decimal        @db.Decimal(12, 2)
+  purchase     Purchase       @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  variant      ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+}
+
+model Promotion {
+  id               String        @id @default(cuid())
+  offerId          String
+  type             String        @default("PERCENT")
+  referencePrice   Decimal       @db.Decimal(12, 2)
+  promotionalPrice Decimal       @db.Decimal(12, 2)
+  minimumPackages  Int           @default(1)
+  startAt          DateTime
+  endAt            DateTime
+  active           Boolean       @default(true)
+  conditions       String?
+  createdAt        DateTime      @default(now())
+  offer            SupplierOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  @@index([offerId, active, startAt, endAt])
+}
+
+model ProductRequest {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  status      String   @default("PENDING")
+  adminNote   String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}

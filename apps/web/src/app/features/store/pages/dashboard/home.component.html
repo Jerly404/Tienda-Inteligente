@@ -1,0 +1,29 @@
+<section class="page store-summary">
+  <div class="welcome-row"><h1>Resumen</h1><a class="button primary" routerLink="/panel/comparar"><svg lucideArrowUpDown></svg> Comparar precios</a></div>
+  @if(dashboard.loading()){<div class="summary-state" role="status">Cargando el resumen de tu tienda…</div>}
+  @if(dashboard.error()){<div class="error-banner" role="alert">{{dashboard.error()}} <button class="text-link" (click)="dashboard.load()">Reintentar</button></div>}
+  @if(dashboard.data(); as d){
+  <div class="summary-metrics">
+    <a class="summary-metric" routerLink="/panel/productos"><span class="summary-icon blue"><svg lucidePackage></svg></span><span>Productos monitoreados</span><strong>{{d.monitoredProducts}}</strong><small>Presentaciones únicas en tus listas</small></a>
+    <a class="summary-metric" routerLink="/panel/proveedores"><span class="summary-icon violet"><svg lucideStore></svg></span><span>Proveedores activos</span><strong>{{d.activeSuppliers}}</strong><small>Distribuidoras verificadas</small></a>
+    <a class="summary-metric" routerLink="/panel/listas"><span class="summary-icon mint"><svg lucideTrendingDown></svg></span><span>Ahorro estimado</span><strong>{{d.estimatedSavings === null ? '—' : (d.estimatedSavings | currency:'PEN':'S/ ':'1.2-2')}}</strong><small>Compras planificadas · sin entrega</small></a>
+    <a class="summary-metric" routerLink="/panel/ofertas"><span class="summary-icon amber"><svg lucideTags></svg></span><span>Ofertas del día</span><strong>{{d.currentOffers}}</strong><small>Ofertas vigentes para consultar hoy</small></a>
+  </div>
+  <div class="summary-columns">
+    <article class="summary-panel"><div class="summary-panel-head"><div><h2><svg lucideTags></svg> Ofertas del día</h2></div><a routerLink="/panel/ofertas">Ver todas <svg lucideArrowRight></svg></a></div>
+      @for(o of d.offers.slice(0, 3); track o.id){<a class="summary-offer" routerLink="/panel/comparar" [queryParams]="{q:o.product}"><span class="summary-icon blue"><svg lucidePackage></svg></span><span class="summary-offer-name"><b>{{o.product}}</b><small>{{o.presentation}} · {{o.supplier}}</small><small>Mínimo {{o.minimumPackages}} paquete(s)</small></span><span class="summary-offer-price"><b>{{o.price | currency:'PEN':'S/ ':'1.2-2'}}</b><small>por paquete</small></span></a>}
+      @empty{<div class="summary-state">No hay ofertas vigentes. Las nuevas ofertas aparecerán aquí.</div>}
+    </article>
+    <article class="summary-panel" id="alertas"><div class="summary-panel-head"><div><h2><svg lucideBell></svg> Alertas recientes</h2></div><span class="summary-count">{{d.alerts.length}}</span></div>
+      @for(a of d.alerts.slice(0, 4); track a.id){<div class="summary-alert"><span class="alert-indicator" [class.price-up]="a.direction === 'UP'">{{a.direction === 'UP' ? '↗' : '↘'}}</span><div><b>{{a.direction === 'UP' ? 'Subió de precio' : 'Bajó de precio'}} · {{a.product}}</b><p>{{a.supplier}} · {{a.presentation}}</p><small>{{a.previous | currency:'PEN':'S/ '}} → {{a.current | currency:'PEN':'S/ '}} · {{a.date | date:'dd/MM'}}</small></div></div>}
+      @empty{<div class="summary-state"><svg lucideBell></svg><b>Sin cambios recientes</b><p>{{d.monitoredProducts ? 'No se registraron cambios de precio en tus productos.' : 'Agrega productos a tus listas para seguir sus cambios de precio.'}}</p><a routerLink="/panel/productos">Monitorear productos <svg lucideArrowRight></svg></a></div>}
+      <div class="summary-footnote">Nuevas promociones: sin promociones registradas.</div>
+    </article>
+  </div>
+  <article class="summary-recommendations"><div class="summary-panel-head"><div><h2><svg lucideSparkles></svg> Recomendaciones inteligentes</h2></div></div><div class="summary-recommendation-grid">
+    @for(c of d.comparisons.slice(0, 3); track c.variantId){<a routerLink="/panel/comparar" [queryParams]="{q:c.product}"><span class="recommendation-label">{{c.monitored ? 'EN TUS LISTAS' : 'OPORTUNIDAD DEL CATÁLOGO'}}</span><h3>{{c.product}}</h3><p>{{c.presentation}} · {{c.supplier}}</p><strong>{{c.lowest | currency:'PEN':'S/ '}} <small>/ paquete</small></strong><span>Hasta {{c.highest-c.lowest | currency:'PEN':'S/ '}} menos frente al mayor precio.</span><b class="recommendation-link">Comparar {{c.suppliers}} proveedores <svg lucideArrowRight></svg></b></a>}
+    @empty{<div class="summary-state">Necesitamos ofertas de al menos dos proveedores para recomendar una opción.</div>}
+  </div><p class="summary-footnote">Comparación de un paquete, sin entrega. Revisa cantidades y condiciones antes de elegir.</p></article>
+  <article class="summary-panel summary-comparison-panel"><div class="summary-panel-head"><div><h2>Comparación de productos</h2></div><a routerLink="/panel/comparar">Abrir comparador <svg lucideArrowRight></svg></a></div><div class="summary-table-wrap"><table class="summary-table"><thead><tr><th>Producto / presentación</th><th>Menor precio</th><th>Mayor precio</th><th>Diferencia</th><th>Proveedor con menor precio</th><th></th></tr></thead><tbody>@for(c of d.comparisons.slice(0, 5); track c.variantId){<tr><td><b>{{c.product}}</b><small>{{c.presentation}}</small></td><td>{{c.lowest | currency:'PEN':'S/ '}}</td><td>{{c.highest | currency:'PEN':'S/ '}}</td><td class="summary-saving">{{c.highest-c.lowest | currency:'PEN':'S/ '}}</td><td>{{c.supplier}}</td><td><a routerLink="/panel/comparar" [queryParams]="{q:c.product}" [attr.aria-label]="'Comparar ' + c.product"><svg lucideArrowRight></svg></a></td></tr>}@empty{<tr><td colspan="6">Aún no hay productos con ofertas comparables.</td></tr>}</tbody></table></div></article>
+  }
+</section>

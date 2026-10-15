@@ -1,0 +1,41 @@
+<section class="analytics" aria-label="Análisis comercial">
+  <div class="toolbar"><span><i></i> Actividad de cotizaciones</span><div class="periods" aria-label="Periodo de análisis">@for(days of [7,30,90];track days){<button type="button" [class.selected]="period()===days" [attr.aria-pressed]="period()===days" (click)="period.set(days)">Últimos {{days}} días</button>}</div></div>
+  <div class="metrics">
+    <article><span class="analytics-metric-label">Cotizaciones recibidas <span class="symbol blue">↙</span></span><strong>{{filtered().length}}</strong><p>En la bandeja del periodo</p></article>
+    <article><span class="analytics-metric-label">Pendientes de respuesta <span class="symbol amber">◷</span></span><strong>{{pending()}}</strong><button class="inline-action" (click)="navigate.emit('Cotizaciones')">Revisar solicitudes ↗</button></article>
+    <article><span class="analytics-metric-label">Cotizaciones respondidas <span class="symbol teal">✓</span></span><strong>{{responded()}}</strong><p>{{filtered().length ? responseRate()+'% de la bandeja del periodo' : 'Sin solicitudes en este periodo'}}</p></article>
+    <article><span class="analytics-metric-label">Promociones vigentes <span class="symbol violet">%</span></span><strong>{{promotions().length}}</strong><p><span class="status-dot"></span>{{expiring().length}} vencen en los próximos 7 días</p></article>
+  </div>
+  <div class="chart-grid">
+    <article class="trend card">
+      <div class="card-heading"><div><span class="eyebrow">EVOLUCIÓN DE SOLICITUDES</span><h2>Cotizaciones por día</h2></div><span class="legend"><i></i> Recibidas</span></div>
+      <div class="chart-summary"><strong>{{filtered().length}}</strong><span>solicitudes · últimos {{period()}} días</span></div>
+      <div class="bar-chart" role="group" aria-label="Cotizaciones recibidas por día; enfoca una barra para consultar su fecha y cantidad">
+        @for(day of chart();track day.date.getTime()){
+          <div class="bar-slot" tabindex="0" [attr.aria-label]="(day.date|date:'dd MMM')+': '+day.count+' cotizaciones'">
+            <div class="bar" [style.height.%]="day.height" [class.zero]="!day.count"></div><span class="tooltip">{{day.date|date:'dd MMM'}} · {{day.count}}</span>
+          </div>
+        }
+      </div>
+      <div class="axis"><span>{{chart()[0].date|date:'dd MMM'}}</span><span>{{chart()[chart().length-1].date|date:'dd MMM'}}</span></div>
+      <p class="chart-note">{{filtered().length ? 'Cada barra representa las solicitudes recibidas ese día.' : 'No hay cotizaciones en este periodo. Prueba un intervalo más amplio.'}}</p>
+    </article>
+    <article class="card response-card"><div class="card-heading"><div><span class="eyebrow">SEGUIMIENTO COMERCIAL</span><h2>Atención de solicitudes</h2></div></div>
+      <div class="donut" role="img" [attr.aria-label]="responded()+' respondidas y '+pending()+' pendientes'" [style.background]="'conic-gradient(#277bba 0% '+responseRate()+'%, #e9eef5 '+responseRate()+'% 100%)'"><div><strong>{{filtered().length ? responseRate()+'%' : '—'}}</strong><span>respondidas</span></div></div>
+      <div class="response-legend"><span><i class="responded"></i> Respondidas <b>{{responded()}}</b></span><span><i></i> Pendientes <b>{{pending()}}</b></span></div>
+      <button class="secondary" (click)="navigate.emit('Cotizaciones')">Ir a cotizaciones <span>↗</span></button>
+    </article>
+  </div>
+  <div class="detail-grid">
+    <article class="card"><div class="card-heading"><div><span class="eyebrow">INTERÉS DE LAS TIENDAS</span><h2>Productos más solicitados</h2></div><span class="badge">Top 5</span></div>
+      @for(row of ranking();track row.name;let i=$index){<div class="ranking-row"><span class="rank">{{i+1}}</span><div><div class="ranking-label"><b>{{row.name}}</b><span>{{row.count}} {{row.count===1?'solicitud':'solicitudes'}}</span></div><div class="track"><span [style.width.%]="row.count/ranking()[0].count*100"></span></div></div></div>}@empty{<div class="empty">Aún no hay productos solicitados en este periodo.</div>}
+      <p class="chart-note">Una aparición por producto y cotización. No representa unidades vendidas.</p>
+    </article>
+    <article class="card"><div class="card-heading"><div><span class="eyebrow">PRÓXIMOS VENCIMIENTOS</span><h2>Promociones por revisar</h2></div><span class="badge amber">{{expiring().length}} por vencer</span></div>
+      @for(promo of expiring().slice(0,3);track promo.id){<div class="promotion-row"><span class="promo-icon">%</span><div><b>{{promo.name}}</b><span>Vence el {{promo.endAt|date:'dd MMM yyyy'}}</span></div></div>}@empty{<div class="empty">No tienes promociones que venzan en los próximos 7 días.</div>}
+      <button class="inline-action" (click)="navigate.emit('Precios y promociones')">Administrar promociones ↗</button>
+    </article>
+  </div>
+  <div class="catalog-strip"><span class="symbol blue">▦</span><div><b>Tu catálogo, al día</b><span>{{published().length}} ofertas publicadas · {{outOfStock()}} sin existencias</span></div><button class="secondary" (click)="navigate.emit('Inventario')">Revisar inventario ↗</button></div>
+  <p class="source-note">Las cotizaciones incluyen las solicitudes pendientes y respondidas de esta distribuidora; los otros estados no forman parte de la bandeja. Promociones e inventario muestran el estado actual, independientemente del periodo seleccionado.</p>
+</section>

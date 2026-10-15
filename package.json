@@ -1,0 +1,24 @@
+{
+  "name": "tienda-inteligente",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": ["apps/api", "apps/web"],
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c green,blue \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "npm --workspace apps/api run start:dev",
+    "dev:web": "npm --workspace apps/web start",
+    "build": "npm run build --workspace apps/api && npm run build --workspace apps/web",
+    "test": "npm run test --workspace apps/api",
+    "db:generate": "node node_modules/prisma/build/index.js generate --schema apps/api/prisma/schema.prisma",
+    "db:migrate": "node --env-file=.env node_modules/prisma/build/index.js migrate dev --schema apps/api/prisma/schema.prisma",
+    "db:migrate:deploy": "node --env-file=.env node_modules/prisma/build/index.js migrate deploy --schema apps/api/prisma/schema.prisma",
+    "db:seed": "node --env-file=.env node_modules/tsx/dist/cli.mjs apps/api/prisma/seed.ts",
+    "db:seed:showcase": "node --env-file=.env node_modules/tsx/dist/cli.mjs apps/api/prisma/seed-showcase.ts",
+    "admin:create": "node --env-file=.env node_modules/tsx/dist/cli.mjs apps/api/src/prisma/create-admin.ts"
+  },
+  "devDependencies": { "concurrently": "^9.2.1" },
+  "overrides": {
+    "deepmerge-ts": "^8.0.2",
+    "@nestjs/swagger": { "js-yaml": "^5.4.1" }
+  }
+}
