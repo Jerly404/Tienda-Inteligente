@@ -1,21 +1,55 @@
 # Tienda Inteligente
 
-**Compara mejor. Compra inteligentemente.** Plataforma de abastecimiento para bodegas y proveedores. Permite consultar catálogo y ofertas, comparar costos conocidos y gestionar compras, favoritos, alertas y reportes con persistencia PostgreSQL.
+**Abastecimiento claro para los negocios de Cajamarca.** Una plataforma que ayuda a bodegas a comparar productos, precios, disponibilidad y condiciones de entrega, y permite a distribuidores administrar su oferta comercial.
 
-El estado y límites funcionales están documentados en [estado de implementación](docs/estado.md), la arquitectura en [implementación integrada](docs/implementacion-maestra.md), los cálculos en [motor de comparación](docs/algoritmo-comparacion.md) y las funciones comprador en [reportes y registros](docs/buyer-workspace.md).
+[Ver el proyecto en GitHub](https://github.com/Jerly404/Tienda-Inteligente) · [Cómo funciona](#cómo-funciona) · [Instalación](#puesta-en-marcha) · [Documentación](#documentación)
 
-## Tecnologías
+## La plataforma
 
-- Angular 22, TypeScript estricto, formularios y standalone components.
-- NestJS 11, REST, validación DTO, Swagger y Helmet.
-- PostgreSQL 16 + PostGIS mediante Docker Compose; Prisma 6 para persistencia relacional.
-- Argon2id para contraseñas y JWT de acceso.
+![Página de bienvenida de Tienda Inteligente](docs/images/inicio.png)
 
-## Requisitos
+Tienda Inteligente reúne información de productos y proveedores para que cada comercio pueda tomar decisiones de compra con más contexto. Los precios y condiciones dependen de la información publicada por los distribuidores.
 
-Node.js 22.22.3+, 24.15+ o 26+, npm y Docker Compose. Estas versiones cumplen los requisitos actuales de Angular 22.
+## Experiencia por perfil
 
-## Desarrollo local
+### Acceso a la plataforma
+
+| Inicio de sesión | Registro de negocio |
+| --- | --- |
+| ![Pantalla de inicio de sesión](docs/images/inicio-sesion.png) | ![Formulario de registro de tienda o distribuidora](docs/images/registro.png) |
+
+### Paneles de gestión
+
+| Tienda o bodega | Distribuidora |
+| --- | --- |
+| ![Panel de resumen para una tienda](docs/images/panel-tienda.png) | ![Panel de resumen para una distribuidora](docs/images/panel-distribuidora.png) |
+
+## Qué puedes hacer
+
+- **Tiendas y bodegas:** explorar productos, comparar ofertas por presentación, revisar proveedores y ubicaciones, organizar favoritos y listas, recibir alertas y solicitar cotizaciones.
+- **Distribuidoras:** publicar productos, administrar precios y existencias, crear promociones, responder cotizaciones y gestionar cobertura y condiciones comerciales.
+- **Administración:** revisar y gestionar cuentas, negocios y contenido de la plataforma desde un espacio con acceso restringido.
+- **Mapa:** consultar sucursales verificadas con ubicación registrada mediante Leaflet y OpenStreetMap.
+
+La comparación distingue precio del producto y costo de entrega cuando está informado. Una entrega sin costo conocido no se considera gratuita ni como un total confirmado.
+
+## Tecnología
+
+- **Web:** Angular 22 y TypeScript estricto.
+- **API:** NestJS 11, REST, validación de DTO, Swagger y Helmet.
+- **Datos:** PostgreSQL 16 con PostGIS y Prisma 6.
+- **Acceso:** JWT y contraseñas protegidas con Argon2id.
+- **Mapas:** Leaflet y teselas públicas de OpenStreetMap.
+
+## Puesta en marcha
+
+### Requisitos
+
+Node.js 22.22.3+, 24.15+ o 26+, npm y Docker Compose. Las versiones de Node indicadas cumplen los requisitos de Angular 22.
+
+### Instalar y ejecutar
+
+Desde la raíz del repositorio:
 
 ```sh
 cp .env.example .env
@@ -26,45 +60,71 @@ npm run db:migrate
 npm run dev
 ```
 
-Web: <http://localhost:4200>. API: <http://localhost:3000/api>. Swagger: <http://localhost:3000/api/docs>. Health: <http://localhost:3000/api/health>.
+La aplicación web queda en <http://localhost:4200>. La API está en <http://localhost:3000/api>, su documentación Swagger en <http://localhost:3000/api/docs> y el estado del servicio en <http://localhost:3000/api/health>.
 
-Al registrar una cuenta se elige tienda o distribuidora y se solicitan RUC, razón social, nombre comercial, teléfono, ubicación y datos de acceso. La tienda registra su giro; la distribuidora añade rubros, pedido mínimo, horario, medios de pago y cobertura de entrega. El RUC se valida por longitud y dígito verificador; su vigencia y titularidad requieren una consulta SUNAT que aún no está integrada. Al iniciar sesión, cada rol entra a su espacio. El administrador inicial se crea mediante el script seguro descrito abajo. La API también está disponible en Swagger. No se crea un administrador predeterminado.
+### Crear el primer administrador
 
-Espacios web: comprador <http://localhost:4200/app>, proveedor <http://localhost:4200/proveedor> y administrador <http://localhost:4200/admin>. Las cotizaciones cuentan con API; correo y WhatsApp no están integrados.
-
-La migración inicial está versionada. `db:migrate` crea/revisa migraciones de desarrollo; `db:migrate:deploy` aplica las existentes en despliegue. `npm run admin:create` crea el primer administrador usando `ADMIN_EMAIL`, `ADMIN_NAME` y `ADMIN_PASSWORD` del entorno; requiere una contraseña de 14 caracteres o más, falla si ya hay un administrador y no establece una cuenta predeterminada. Elimina esas variables después de usarlo.
-
-## Datos de demostración
-
-No se insertan datos demo automáticamente. Para crear veinte productos en cinco categorías y sesenta ofertas distribuidas entre tres proveedores de prueba, configurar explícitamente `DEMO_SEED=true` en `.env` y ejecutar `npm run db:seed`. El escenario de arroz de 50 kg usa precios ficticios S/ 185, S/ 178 y S/ 180 con entregas de S/ 15, S/ 10 y S/ 25. Los nombres y ubicaciones se identifican con DEMO; no son proveedores ni precios reales de Cajamarca. El seed es repetible y solo debe activarse para desarrollo.
-
-Para preparar capturas con el catálogo amplio, ejecutar `DEMO_SEED=true npm run db:seed:showcase`. Esta operación **vacía todos los registros existentes de la base local `tienda_inteligente`** y carga una tienda, 50 proveedores, 100 productos y 5,000 ofertas, junto con ubicaciones, precios históricos, promociones y una lista de compra. Las cuentas y negocios llevan la marca DEMO y los datos son ficticios. Contraseña compartida de demostración: `TiendaDemo#2026`; tienda `bodega.demo@tiendainteligente.test`; proveedor 01 `distribuidora.demo@tiendainteligente.test`. El script rechaza URLs que no apunten a la base local permitida.
-
-La página de ubicaciones muestra en un mapa Leaflet/OpenStreetMap las sucursales verificadas con coordenadas. Cada cuenta puede elegir su tipo de negocio, ubicar sucursales haciendo clic en el mapa o autorizar el GPS y guardar la dirección; la tienda guardada se usa como origen de distancia en el comparador. Los enlaces de cada proveedor abren Google Maps para consultar el recorrido vial. El mapa usa teselas públicas de OpenStreetMap y no requiere una clave de Google.
-
-Las distancias del comparador son en línea recta. Entregas desconocidas no se convierten en costo cero ni compiten como un total confirmado. Las compras reportadas deben ser confirmadas por el usuario y no representan órdenes ni comprobantes fiscales.
-
-## Seguridad y configuración
-
-Establece un `JWT_SECRET` aleatorio y de alta entropía antes de cualquier despliegue. No reutilices los valores locales de ejemplo. `WEB_ORIGIN` debe apuntar al origen exacto de la web. No se incluyen cuentas administrador predeterminadas. El script de creación inicial no reemplaza las futuras herramientas de recuperación administrativa.
-
-## Comandos
+No existe una cuenta administrativa predeterminada. Configura `ADMIN_EMAIL`, `ADMIN_NAME` y `ADMIN_PASSWORD` en el entorno local y ejecuta:
 
 ```sh
-npm run dev
-npm run build
-npm test
-docker compose up -d db
+npm run admin:create
 ```
 
-## Estructura
+La contraseña debe tener al menos 14 caracteres. El comando solo permite crear el administrador inicial; no reemplaza una cuenta existente. No publiques credenciales ni las guardes en el repositorio.
+
+### Datos de demostración (opcional)
+
+Para cargar datos ficticios de desarrollo, activa `DEMO_SEED=true` en `.env` y ejecuta:
+
+```sh
+npm run db:seed
+```
+
+Esto carga 20 productos, 5 categorías y 60 ofertas de 3 proveedores de prueba. También hay un escenario visual más amplio:
+
+```sh
+npm run db:seed:showcase
+```
+
+**Atención:** el escenario showcase vacía todos los registros de la base local `tienda_inteligente` antes de cargar datos de demostración. Úsalo solo en un entorno local descartable. Los nombres, ubicaciones, precios y cuentas de demo son ficticios; la contraseña compartida de demostración es `TiendaDemo#2026`.
+
+## Comandos útiles
+
+| Comando | Acción |
+| --- | --- |
+| `npm run dev` | Inicia API y aplicación web en modo desarrollo. |
+| `npm run build` | Compila API y aplicación web. |
+| `npm test` | Ejecuta las pruebas de la API. |
+| `npm run db:generate` | Genera el cliente Prisma. |
+| `npm run db:migrate` | Crea o aplica migraciones durante el desarrollo. |
+| `npm run db:migrate:deploy` | Aplica migraciones existentes en despliegue. |
+
+## Organización del código
 
 ```text
-apps/web/       Angular: features/store, supplier, admin, public y auth
-apps/api/       NestJS: módulos por dominio, core e infraestructura
-packages/       Reservado para contratos compartidos versionados
-docs/           Arquitectura, algoritmos y estado del producto
-infrastructure/ Reservado para configuración de despliegue
+apps/
+  api/                 API NestJS y persistencia Prisma
+    src/core/          Autenticación y capacidades centrales
+    src/modules/       Dominios de negocio de la API
+    prisma/            Esquema, migraciones y datos de desarrollo
+  web/                 Aplicación Angular
+    src/app/features/  Funcionalidades públicas, acceso, tienda,
+                       distribuidora y administración
+    src/app/shared/    Componentes y utilidades compartidos
+docs/                  Arquitectura, producto y comparación
+  images/              Capturas de las pantallas principales
 ```
 
-La separación por áreas, las dependencias y las reglas para agregar funciones están en [arquitectura](docs/arquitectura.md#organización-del-código).
+## Documentación
+
+- [Arquitectura y organización del código](docs/arquitectura.md)
+- [Estado de implementación y límites](docs/estado.md)
+- [Implementación integrada](docs/implementacion-maestra.md)
+- [Algoritmo de comparación](docs/algoritmo-comparacion.md)
+- [Espacio de trabajo de tienda](docs/buyer-workspace.md)
+
+## Alcance y configuración segura
+
+Las distancias mostradas son en línea recta. El usuario debe confirmar las compras reportadas; no son órdenes de compra ni comprobantes fiscales. La validación del RUC comprueba formato y dígito verificador, pero todavía no consulta SUNAT. Las notificaciones por correo y WhatsApp no están integradas.
+
+Antes de desplegar, configura un `JWT_SECRET` aleatorio y de alta entropía, y limita `WEB_ORIGIN` al origen de tu aplicación. No uses en producción valores de `.env.example` ni las cuentas de demostración. `.env` contiene configuración privada y no debe subirse al repositorio.
