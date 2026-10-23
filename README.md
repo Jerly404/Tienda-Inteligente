@@ -117,6 +117,7 @@ docs/                  Arquitectura, producto y comparación
 
 ## Documentación
 
+- [Despliegue gratuito y actualizaciones automáticas con Render y Neon](docs/despliegue.md)
 - [Arquitectura y organización del código](docs/arquitectura.md)
 - [Estado de implementación y límites](docs/estado.md)
 - [Implementación integrada](docs/implementacion-maestra.md)

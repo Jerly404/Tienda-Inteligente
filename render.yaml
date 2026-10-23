@@ -1,0 +1,49 @@
+# Create a Blueprint in Render from this repository (main branch).
+# One-time setup: docs/despliegue.md. Secrets stay in Render, never in Git.
+services:
+  - type: web
+    name: tienda-inteligente-api
+    runtime: node
+    plan: free
+    branch: main
+    autoDeployTrigger: commit
+    buildCommand: npm ci --include=dev && npm run build:render:api
+    startCommand: npm run start:render
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.22.3
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: WEB_ORIGIN
+        sync: false
+      - key: DEMO_SEED
+        value: "false"
+
+  - type: web
+    name: tienda-inteligente-web
+    runtime: static
+    branch: main
+    autoDeployTrigger: commit
+    buildCommand: npm ci --include=dev && npm run build:render:web
+    staticPublishPath: apps/web/dist/web/browser
+    envVars:
+      - key: NODE_VERSION
+        value: 22.22.3
+      - key: API_ORIGIN
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /config.js
+        name: Cache-Control
+        value: no-store
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache

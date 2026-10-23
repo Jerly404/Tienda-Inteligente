@@ -13,6 +13,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));
   const swagger = new DocumentBuilder().setTitle('Tienda Inteligente API').setDescription('Abastecimiento B2B y comparación explicable').setVersion('0.1.0').addBearerAuth().build();
   SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, swagger));
-  await app.listen(Number(process.env.API_PORT ?? 3000));
+  app.enableShutdownHooks();
+  await app.listen(Number(process.env.PORT ?? process.env.API_PORT ?? 3000), '0.0.0.0');
 }
 bootstrap();
